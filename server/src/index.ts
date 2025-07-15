@@ -2,8 +2,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { Request, Response } from "express";
-import pool from "./db";
+import routes from "./routes/index.routes";
 
 dotenv.config();
 
@@ -18,20 +17,7 @@ app.use(
 
 app.use(express.json());
 
-app.post("/create-user", async (req: Request, res: Response) => {
-  const { username, email } = req.body;
-  try {
-    const insertUser =
-      "INSERT INTO users (username, email) VALUES ($1, $2) RETURNING *";
-
-    const result = await pool.query(insertUser, [username, email]);
-
-    const createdUser = result.rows[0];
-    return res.json(createdUser);
-  } catch (error) {
-    console.log(error);
-  }
-});
+app.use(routes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
