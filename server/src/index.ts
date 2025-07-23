@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import routes from "./routes/index.routes";
 import { errorHandler } from "./middleware/errorHandler";
+import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ app.use(
     origin: "http://localhost:5173",
   })
 );
+
+app.use(cookieParser());
 
 app.use(express.json());
 

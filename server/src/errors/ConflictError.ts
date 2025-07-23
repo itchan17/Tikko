@@ -1,3 +1,4 @@
+import { error } from "console";
 import { CustomError } from "./CustomError";
 
 export class ConflictError extends CustomError {
@@ -9,6 +10,11 @@ export class ConflictError extends CustomError {
   }
 
   serialize() {
-    return { field: this.field, message: this.message };
+    return {
+      error: {
+        field: this.field,
+        message: this.message,
+      },
+    };
   }
 }

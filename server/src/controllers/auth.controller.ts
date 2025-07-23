@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import pool from "../db";
-import { RegistrationData } from "../types/auth.types";
+import { RegistrationData, LoginData } from "../types/auth.types";
 import bcrypt from "bcryptjs";
 import { ConflictError } from "../errors/ConflictError";
+import jwt from "jsonwebtoken";
+import { CookieOptions } from "express";
 
-export const registerUser = async (
+export const register = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -19,9 +21,9 @@ export const registerUser = async (
 
     // Validate inputs are unqiques else return an error
     if (emailExists.rows[0]) {
-      next(new ConflictError("email", "Email is already in use."));
+      return next(new ConflictError("email", "Email is already in use."));
     } else if (userNameExists.rows[0]) {
-      next(new ConflictError("username", "Username is already in use."));
+      return next(new ConflictError("username", "Username is already in use."));
     }
 
     // Query for creating user
@@ -40,6 +42,63 @@ export const registerUser = async (
     const createdUser = result.rows[0];
     return res.json(createdUser);
   } catch (error) {
-    next(error);
+    return next(error);
+  }
+};
+
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password }: LoginData = req.body;
+
+    const checkEmail = "SELECT * FROM users WHERE email = $1";
+    const user = await pool.query(checkEmail, [email]);
+
+    // Check if email exists in database
+    if (!user.rows[0]) {
+      return next(
+        new ConflictError(
+          "email",
+          "Invalid login credentials. Please try again."
+        )
+      );
+    }
+
+    // Compare hashed password to user input password
+    const isMatch = await bcrypt.compare(password, user.rows[0].password);
+
+    if (isMatch) {
+      // Create a token
+      const token = jwt.sign(
+        { id: user.rows[0].id?.toString(), username: user.rows[0].username },
+        process.env.JWT_SECRET as string,
+        { expiresIn: "2 days" }
+      );
+
+      const cookieOptions: CookieOptions = {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+      };
+
+      // Set the cookie
+      res.cookie("access_token", token, cookieOptions);
+      res.sendStatus(200);
+    } else {
+      // Return error if password is incorrect
+      return next(
+        new ConflictError(
+          "password",
+          "Invalid login credentials. Please try again."
+        )
+      );
+    }
+
+    return res.json(user.rows[0]);
+  } catch (error) {
+    return next(error);
   }
 };

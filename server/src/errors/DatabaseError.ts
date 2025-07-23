@@ -8,6 +8,10 @@ export class DatabaseError extends CustomError {
 
   statusCode = 500;
   serialize() {
-    return { message: "Database Error. Try again later." };
+    return {
+      error: {
+        message: "Database Error. Try again later.",
+      },
+    };
   }
 }
