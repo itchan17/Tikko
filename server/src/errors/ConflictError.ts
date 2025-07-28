@@ -1,4 +1,3 @@
-import { error } from "console";
 import { CustomError } from "./CustomError";
 
 export class ConflictError extends CustomError {

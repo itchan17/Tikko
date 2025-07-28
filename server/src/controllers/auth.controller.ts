@@ -13,6 +13,7 @@ export const register = async (
 ) => {
   const { username, email, password }: RegistrationData = req.body;
   try {
+    // DB queries
     const checkEmail = "SELECT * FROM users WHERE email = $1";
     const emailExists = await pool.query(checkEmail, [email]);
 
@@ -71,12 +72,15 @@ export const login = async (
     const isMatch = await bcrypt.compare(password, user.rows[0].password);
 
     if (isMatch) {
+      // Data that will bes tored in the token
+      const userPayload = {
+        id: user.rows[0].id?.toString(),
+      };
+
       // Create a token
-      const token = jwt.sign(
-        { id: user.rows[0].id?.toString(), username: user.rows[0].username },
-        process.env.JWT_SECRET as string,
-        { expiresIn: "2 days" }
-      );
+      const token = jwt.sign(userPayload, process.env.JWT_SECRET as string, {
+        expiresIn: "2 days",
+      });
 
       const cookieOptions: CookieOptions = {
         httpOnly: true,
@@ -86,7 +90,7 @@ export const login = async (
 
       // Set the cookie
       res.cookie("access_token", token, cookieOptions);
-      res.sendStatus(200);
+      res.status(200).json({ message: "Login successful." });
     } else {
       // Return error if password is incorrect
       return next(
