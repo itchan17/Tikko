@@ -1,11 +1,14 @@
 import { CustomError } from "./CustomError";
-import { ZodError, z } from "zod";
+
+type Details = {
+  [key: string]: string;
+};
 
 export class ValidationError extends CustomError {
   statusCode = 400;
 
   // Requires an argument with a type of ZodError
-  constructor(public field: ZodError, public message: "Invalid input.") {
+  constructor(public details: Details, public message: string) {
     super(message);
     Object.setPrototypeOf(this, ValidationError.prototype);
   }
@@ -13,7 +16,7 @@ export class ValidationError extends CustomError {
   serialize() {
     return {
       error: {
-        field: z.flattenError(this.field).fieldErrors, // Return a formatted error
+        details: this.details,
         message: this.message,
       },
     };

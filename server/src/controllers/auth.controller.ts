@@ -2,16 +2,18 @@ import { Request, Response, NextFunction } from "express";
 import pool from "../db";
 import { RegistrationData, LoginData } from "../types/auth.types";
 import bcrypt from "bcryptjs";
-import { ConflictError } from "../errors/ConflictError";
+import { ValidationError } from "../errors/ValidationError";
 import jwt from "jsonwebtoken";
 import { CookieOptions } from "express";
 
+// Register Controller
 export const register = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
   const { username, email, password }: RegistrationData = req.body;
+
   try {
     // DB queries
     const checkEmail = "SELECT * FROM users WHERE email = $1";
@@ -20,11 +22,21 @@ export const register = async (
     const checkUsername = "SELECT * FROM users WHERE username = $1";
     const userNameExists = await pool.query(checkUsername, [username]);
 
-    // Validate inputs are unqiques else return an error
+    // Validate inputs are unqique else return an error
     if (emailExists.rows[0]) {
-      return next(new ConflictError("email", "Email is already in use."));
+      return next(
+        new ValidationError(
+          { email: "This email address is already registered." },
+          "Validation failed."
+        )
+      );
     } else if (userNameExists.rows[0]) {
-      return next(new ConflictError("username", "Username is already in use."));
+      return next(
+        new ValidationError(
+          { username: "This username is already registered." },
+          "Validation failed."
+        )
+      );
     }
 
     // Query for creating user
@@ -40,13 +52,13 @@ export const register = async (
       hashedPassword,
     ]);
 
-    const createdUser = result.rows[0];
-    return res.json(createdUser);
+    return res.status(200).json({ message: "Registration successful." });
   } catch (error) {
     return next(error);
   }
 };
 
+// Login Controller
 export const login = async (
   req: Request,
   res: Response,
@@ -61,9 +73,9 @@ export const login = async (
     // Check if email exists in database
     if (!user.rows[0]) {
       return next(
-        new ConflictError(
-          "email",
-          "Invalid login credentials. Please try again."
+        new ValidationError(
+          { email: "Invalid login credentials. Please try again." },
+          "Login failed."
         )
       );
     }
@@ -94,9 +106,9 @@ export const login = async (
     } else {
       // Return error if password is incorrect
       return next(
-        new ConflictError(
-          "password",
-          "Invalid login credentials. Please try again."
+        new ValidationError(
+          { password: "Invalid login credentials. Please try again." },
+          "Login failed."
         )
       );
     }

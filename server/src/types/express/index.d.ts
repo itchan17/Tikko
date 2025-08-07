@@ -1,7 +1,7 @@
 import * as express from "express";
 
 interface UserPayload {
-  id: string;
+  user_id: string;
 }
 
 declare global {

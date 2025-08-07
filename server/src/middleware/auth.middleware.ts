@@ -33,7 +33,7 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
         .json({ message: "Access denied. Token has expired." });
 
     // Set the user of the request
-    req.user = { id: data.id };
+    req.user = { user_id: data.id };
     next();
   } catch (err) {
     res.status(401).send("Invalid or expired token.");
